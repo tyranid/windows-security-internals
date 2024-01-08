@@ -134,7 +134,7 @@ $sd = New-NtSecurityDescriptor -Type DirectoryService -Owner "DA" -Group "DA"
 Add-NtSecurityDescriptorAce $sd -KnownSid World -Type Allowed -Access ReadProp
 $attr = Get-DsSchemaAttribute -Name "accountExpires"
 Add-NtSecurityDescriptorAce $sd -KnownSid World -Type AllowedObject -Access WriteProp -ObjectType $attr.SchemaId
-Get-NtGrantedAccess $sd -ObjectType $attr ReadProp, WriteProp
+Get-NtGrantedAccess $sd -ObjectType $attr
 $pwd = Get-DsSchemaAttribute -Name "pwdLastSet"
 Get-NtGrantedAccess $sd -ObjectType $pwd
 
