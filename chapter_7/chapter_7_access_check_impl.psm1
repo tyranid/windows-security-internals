@@ -144,7 +144,7 @@ function Resolve-TokenOwnerAccess {
     }
 
     $sids = Select-NtSecurityDescriptorAce $sd -KnownSid OwnerRights -First -AclType Dacl
-    if ($sids.Count -gt 0) {
+    if ($sids -ne $null -and $sids.Count -gt 0) {
         return
     }
 
@@ -397,33 +397,30 @@ function Get-PSGrantedAccess {
     if ($null -EQ $policy){
         return Get-AccessResult STATUS_SUCCESS $context.Privileges $DesiredAccess
     }
-    
-    $effective_access = $DesiredAccess
+
     foreach($rule in $policy.Rules) {
         if ($rule.AppliesTo -NE "") {
             $resource_attrs = $null
             if ($sd.ResourceAttributes.Count -gt 0) {
                 $resource_attrs = $sd.ResourceAttributes.ResourceAttribute
             }
-            if (!(Test-NtAceCondition -Token $Token -Condition $rules.AppliesTo -ResourceAttribute $resource_attrs)) {
+            if (!(Test-NtAceCondition -Token $Token -Condition $rule.AppliesTo -ResourceAttribute $resource_attrs)) {
                 continue
             }
         }
         $new_sd = Copy-NtSecurityDescriptor $SecurityDescriptor
-        Set-NtSecurityDescriptorDacl $rule.Sd.Dacl
+        Set-NtSecurityDescriptorDacl -SecurityDescriptor $new_sd -Ace $rule.SecurityDescriptor.Dacl
 
         $context.SecurityDescriptor = $new_sd
         $context.RemainingAccess = $DesiredAccess
 
         Get-DiscretionaryAccess $context
-        $effective_access = $effective_access -band -bnot $context.RemainingAccess
+        if (!(Test-NtAccessMask $context.RemainingAccess -Empty)) {
+          return Get-AccessResult STATUS_ACCESS_DENIED
+        }
     }
 
-    if (Test-NtAccessMask $effective_access -Empty) {
-        return Get-AccessResult STATUS_ACCESS_DENIED
-    }
-
-    return Get-AccessResult STATUS_SUCCESS $context.Privileges $effective_access
+    return Get-AccessResult STATUS_SUCCESS $context.Privileges $DesiredAccess
 }
 
 Export-ModuleMember -Function Get-PSGrantedAccess
