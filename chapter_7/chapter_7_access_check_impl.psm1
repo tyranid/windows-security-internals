@@ -325,7 +325,7 @@ function Get-AccessResult {
       GrantedAccess = $GrantedAccess
       Privileges = $Privileges
     }
-    return New-Object –TypeName PSObject -Prop $props
+    return New-Object -TypeName PSObject -Prop $props
 }
 
 function Get-PSGrantedAccess {
